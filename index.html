@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AADHIIIEE // PROFESSIONAL DEFENSIVE HUB</title>
+    <style>
+        :root {
+            --hud-bg: #030712;
+            --hud-panel: rgba(11, 15, 25, 0.92);
+            --hud-cyan: #0284c7;
+            --hud-blue: #38bdf8;
+            --hud-glow: rgba(2, 132, 199, 0.3);
+            --hud-green: #10b981;
+            --hud-red: #ef4444;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        @keyframes hudPulse {
+            0%, 100% { opacity: 0.5; box-shadow: 0 0 10px var(--hud-glow); }
+            50% { opacity: 1; box-shadow: 0 0 20px var(--hud-cyan); }
+        }
+
+        @keyframes alertFlash {
+            0%, 100% { background-color: rgba(239, 68, 68, 0.15); border-color: var(--hud-red); box-shadow: 0 0 25px rgba(239, 68, 68, 0.4); }
+            50% { background-color: rgba(239, 68, 68, 0.35); border-color: #ff1a40; box-shadow: 0 0 40px rgba(255, 26, 64, 0.7); }
+        }
+
+        @keyframes slideInRight {
+            0% { transform: translateX(120%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+
+        body {
+            background-color: var(--hud-bg);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 0; overflow-x: hidden;
+        }
+
+        #matrix-canvas {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1; background: #030712;
+        }
+
+        header {
+            background: rgba(11, 15, 25, 0.95);
+            border-bottom: 1px solid rgba(2, 132, 199, 0.25);
+            padding: 16px 36px; display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); backdrop-filter: blur(12px);
+        }
+
+        .logo-area { display: flex; align-items: center; gap: 14px; }
+
+        .status-dot {
+            width: 12px; height: 12px; background-color: var(--hud-green);
+            border-radius: 50%; box-shadow: 0 0 10px var(--hud-green);
+            animation: hudPulse 2s infinite;
+        }
+
+        h1 {
+            font-size: 16px; letter-spacing: 1.5px; margin: 0;
+            color: #f8fafc; font-weight: 700; font-family: 'Courier New', Courier, monospace;
+        }
+
+        span.version {
+            font-size: 10px; background: rgba(56, 189, 248, 0.1); color: var(--hud-blue);
+            padding: 3px 8px; border-radius: 3px; border: 1px solid rgba(56, 189, 248, 0.3);
+            margin-left: 10px; letter-spacing: 0.5px;
+        }
+
+        .main-container {
+            max-width: 1350px; margin: 28px auto; padding: 0 20px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+        }
+
+        .card {
+            background-color: var(--hud-panel);
+            border: 1px solid #1f2937; border-top: 3px solid #374151;
+            border-radius: 8px; padding: 20px; display: flex; flex-direction: column;
+            justify-content: space-between; transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);
+        }
+
+        .card.active-card {
+            border-top-color: var(--hud-green);
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #1f2937; padding-bottom: 10px; margin-bottom: 12px;
+        }
+
+        .card h3 {
+            margin: 0; color: var(--text-main); font-size: 12px;
+            letter-spacing: 1px; font-weight: 600; font-family: 'Courier New', Courier, monospace;
+        }
+
+        .card p { color: var(--text-muted); font-size: 11px; line-height: 1.5; margin-top: 0; }
+
+        .switch-container {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 10px; font-weight: 600; font-family: 'Courier New', Courier, monospace;
+        }
+
+        .switch { position: relative; display: inline-block; width: 38px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #111827; border: 1px solid #374151; transition: .25s; border-radius: 4px;
+        }
+
+        .slider:before {
+            position: absolute; content: ""; height: 12px; width: 14px; left: 2px; bottom: 2px;
+            background-color: var(--text-muted); transition: .25s; border-radius: 2px;
+        }
+
+        input:checked + .slider { background-color: rgba(16, 185, 129, 0.2); border-color: var(--hud-green); }
+        input:checked + .slider:before { transform: translateX(18px); background-color: var(--hud-green); box-shadow: 0 0 8px var(--hud-green); }
+
+        label.input-label {
+            display: block; font-size: 10px; color: var(--hud-blue);
+            text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        input[type="text"] {
+            width: 100%; background-color: rgba(3, 7, 18, 0.85); border: 1px solid #374151;
+            color: var(--hud-blue); padding: 8px 10px; border-radius: 4px; font-size: 11px;
+            box-sizing: border-box; margin-bottom: 12px; font-family: 'Courier New', Courier, monospace;
+        }
+
+        input[type="text"]:focus { outline: none; border-color: var(--hud-cyan); box-shadow: 0 0 10px rgba(2, 132, 199, 0.25); }
+
+        .btn {
+            background-color: rgba(3, 7, 18, 0.8); color: var(--hud-blue);
+            border: 1px solid rgba(2, 132, 199, 0.5); padding: 8px 14px; font-size: 10px;
+            font-weight: bold; letter-spacing: 1px; border-radius: 4px; cursor: pointer;
+            transition: all 0.2s ease; text-transform: uppercase; width: 100%;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .btn:hover:not(:disabled) {
+            background-color: var(--hud-cyan); color: #030712; border-color: var(--hud-cyan);
+            box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+        }
+
+        .btn:disabled { border-color: #1f2937; color: #4b5563; cursor: not-allowed; background: transparent; }
+
+        .terminal-card {
+            grid-column: 1 / -1; background-color: rgba(1, 4, 9, 0.92);
+            border: 1px solid #1f2937; border-radius: 8px; padding: 18px;
+            box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.8); backdrop-filter: blur(8px);
+        }
+
+        .terminal-card.threat-detected { animation: alertFlash 1s infinite; }
+
+        .terminal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #1f2937; padding-bottom: 10px; margin-bottom: 14px;
+            font-size: 11px; color: var(--text-muted); letter-spacing: 1px; font-family: 'Courier New', Courier, monospace;
+        }
+
+        #output {
+            background-color: rgba(0, 0, 0, 0.88); color: #34d399; font-family: 'Courier New', Courier, monospace;
+            font-size: 11px; line-height: 1.6; padding: 14px; border-radius: 4px; min-height: 130px;
+            max-height: 240px; overflow-y: auto; border: 1px solid #0f172a; box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.9);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="matrix-canvas"></canvas>
+
+    <header>
+        <div class="logo-area">
+            <div class="status-dot"></div>
+            <h1>AADHIIIEE // PROFESSIONAL DEFENSIVE HUB <span class="version">v5.0_FINAL</span></h1>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); font-family: 'Courier New', Courier, monospace; letter-spacing: 1px;">
+            GRID STATUS: <span style="color: var(--hud-green); font-weight: bold;">[CONNECTED]</span>
+        </div>
+    </header>
+
+    <div class="main-container">
+        
+        <!-- Module 1 -->
+        <div class="card" id="card-perimeter">
+            <div>
+                <div class="card-header">
+                    <h3>[TOOL_01] PERIMETER_STRESS</h3>
+                    <div class="switch-container">
+                        <span id="perimeter-status-text" style="color: var(--text-muted);">STANDBY</span>
+                        <label class="switch">
+                            <input type="checkbox" id="togglePerimeter" onchange="toggleModule('perimeter')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <p>Test remote target reachability and HTTP status codes via backend requests.</p>
+                <br>
+                <label class="input-label" for="targetUrl">Target Node URL:</label>
+                <input type="text" id="targetUrl" value="https://example.com" disabled>
+            </div>
+            <div>
+                <button class="btn" id="btnPerimeter" onclick="runPerimeterTest()" disabled>> INITIATE_STRIKE</button>
+            </div>
+        </div>
+
+        <!-- Module 2 -->
+        <div class="card" id="card-ids">
+            <div>
+                <div class="card-header">
+                    <h3>[TOOL_02] IDS_LOG_TELEMETRY</h3>
+                    <div class="switch-container">
+                        <span id="ids-status-text" style="color: var(--text-muted);">STANDBY</span>
+                        <label class="switch">
+                            <input type="checkbox" id="toggleIds" onchange="toggleModule('ids')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <p>Stream real-time log lines directly from your system file path (`sec_ops.log`).</p>
+            </div>
+            <div>
+                <button class="btn" id="btnIds" onclick="runIDSInfo()" disabled>> QUERY_TELEMETRY</button>
+            </div>
+        </div>
+
+        <!-- Module 3 -->
+        <div class="card" id="card-ipfinder">
+            <div>
+                <div class="card-header">
+                    <h3>[TOOL_03] IP_GEOLOC_FINDER</h3>
+                    <div class="switch-container">
+                        <span id="ipfinder-status-text" style="color: var(--text-muted);">STANDBY</span>
+                        <label class="switch">
+                            <input type="checkbox" id="toggleIpfinder" onchange="toggleModule('ipfinder')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <p>Resolve domains to live IP addresses, lookup ISP routing info, and track geolocation data.</p>
+                <br>
+                <label class="input-label" for="targetIp">Target Domain / IP:</label>
+                <input type="text" id="targetIp" value="google.com" disabled>
+            </div>
+            <div>
+                <button class="btn" id="btnIpfinder" onclick="runIpFinder()" disabled>> TRACE_IP_NODE</button>
+            </div>
+        </div>
+
+        <!-- Module 4 -->
+        <div class="card" id="card-vulnscanner">
+            <div>
+                <div class="card-header">
+                    <h3>[TOOL_04] PORT_VULN_SCANNER</h3>
+                    <div class="switch-container">
+                        <span id="vulnscanner-status-text" style="color: var(--text-muted);">STANDBY</span>
+                        <label class="switch">
+                            <input type="checkbox" id="toggleVulnscanner" onchange="toggleModule('vulnscanner')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <p>Perform live socket port connectivity tests against target hosts to identify exposed services.</p>
+                <br>
+                <label class="input-label" for="vulnTarget">Scan Target Host:</label>
+                <input type="text" id="vulnTarget" value="127.0.0.1" disabled>
+            </div>
+            <div>
+                <button class="btn" id="btnVulnscanner" onclick="runVulnScan()" disabled>> SCAN_PORTS</button>
+            </div>
+        </div>
+
+        <!-- Module 5 -->
+        <div class="card" id="card-hashanalyzer">
+            <div>
+                <div class="card-header">
+                    <h3>[TOOL_05] HASH_GENERATOR</h3>
+                    <div class="switch-container">
+                        <span id="hashanalyzer-status-text" style="color: var(--text-muted);">STANDBY</span>
+                        <label class="switch">
+                            <input type="checkbox" id="toggleHashanalyzer" onchange="toggleModule('hashanalyzer')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <p>Compute cryptographic hashes (MD5, SHA256) instantly via Python encryption modules.</p>
+                <br>
+                <label class="input-label" for="hashInput">Input Token / String:</label>
+                <input type="text" id="hashInput" value="admin123" disabled>
+            </div>
+            <div>
+                <button class="btn" id="btnHashanalyzer" onclick="runHashAnalyzer()" disabled>> COMPUTE_HASH</button>
+            </div>
+        </div>
+
+        <!-- Module 6 -->
+        <div class="card" id="card-hashdecoder">
+            <div>
+                <div class="card-header">
+                    <h3>[TOOL_06] HASH_DECODER</h3>
+                    <div class="switch-container">
+                        <span id="hashdecoder-status-text" style="color: var(--text-muted);">STANDBY</span>
+                        <label class="switch">
+                            <input type="checkbox" id="toggleHashdecoder" onchange="toggleModule('hashdecoder')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <p>Perform live database lookups to decode cryptographic hashes into plain text.</p>
+                <br>
+                <label class="input-label" for="decodeHashInput">Target Hash (e.g. MD5):</label>
+                <input type="text" id="decodeHashInput" value="5f4dcc3b5aa765d61d8327deb882cf99" disabled>
+            </div>
+            <div>
+                <button class="btn" id="btnHashdecoder" onclick="runHashDecoder()" disabled>> DECODE_HASH</button>
+            </div>
+        </div>
+
+        <!-- Terminal Deck -->
+        <div class="terminal-card" id="terminal-deck">
+            <div class="terminal-header">
+                <span>ROOT@AADHIIIEE-CORE:~# tail -f sec_ops.log</span>
+                <span style="color: var(--hud-cyan);" id="live-indicator">● SYSTEMS_ACTIVE</span>
+            </div>
+            <div id="output">[SYS_INIT] AADHIIIEE Defensive Hub online. Select modules above to execute backend tools...</div>
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const chars = 'aadhiiiee';
+        const fontSize = 14;
+        let columns = Math.floor(canvas.width / fontSize);
+        let drops = [];
+        for (let i = 0; i < columns; i++) drops[i] = 1;
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(3, 7, 18, 0.12)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0284c7';
+            ctx.font = fontSize + 'px monospace';
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 50);
+
+        function logOutput(message) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML += "<br>> " + message;
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+
+        function toggleModule(moduleName) {
+            const checkbox = document.getElementById('toggle' + capitalize(moduleName));
+            if (!checkbox) return;
+            const isChecked = checkbox.checked;
+            const statusText = document.getElementById(moduleName + '-status-text');
+            const btn = document.getElementById('btn' + capitalize(moduleName));
+            const card = document.getElementById('card-' + moduleName);
+            
+            if (moduleName === 'perimeter') document.getElementById('targetUrl').disabled = !isChecked;
+            if (moduleName === 'ipfinder') document.getElementById('targetIp').disabled = !isChecked;
+            if (moduleName === 'vulnscanner') document.getElementById('vulnTarget').disabled = !isChecked;
+            if (moduleName === 'hashanalyzer') document.getElementById('hashInput').disabled = !isChecked;
+            if (moduleName === 'hashdecoder') document.getElementById('decodeHashInput').disabled = !isChecked;
+
+            if (isChecked) {
+                if(statusText) { statusText.innerText = "ACTIVE"; statusText.style.color = "var(--hud-green)"; }
+                if(btn) btn.disabled = false;
+                if(card) card.classList.add('active-card');
+                logOutput(`[+] SUBSYSTEM ENGAGED: ${moduleName.toUpperCase()} online.`);
+            } else {
+                if(statusText) { statusText.innerText = "STANDBY"; statusText.style.color = "var(--text-muted)"; }
+                if(btn) btn.disabled = true;
+                if(card) card.classList.remove('active-card');
+                logOutput(`[-] SUBSYSTEM DISENGAGED: ${moduleName.toUpperCase()} offline.`);
+            }
+        }
+
+        function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
+
+        function runPerimeterTest() {
+            const url = document.getElementById('targetUrl').value;
+            logOutput("Probing remote node -> " + url);
+            fetch('/run-perimeter', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url })
+            })
+            .then(res => res.json()).then(data => logOutput(data.message))
+            .catch(err => logOutput("[!] Request timeout or network error."));
+        }
+
+        function runIDSInfo() {
+            logOutput("Reading log lines from backend path (sec_ops.log)...");
+            fetch('/run-ids', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+            .then(res => res.json()).then(data => {
+                if (data.logs) data.logs.forEach(log => logOutput("[IDS] " + log));
+            }).catch(err => logOutput("[!] IDS telemetry stream error."));
+        }
+
+        function runIpFinder() {
+            const ip = document.getElementById('targetIp').value;
+            logOutput(`Resolving domain and querying geolocation database for: ${ip}...`);
+            fetch('/run-ipfinder', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ip: ip })
+            })
+            .then(res => res.json()).then(data => logOutput("[+] " + data.message))
+            .catch(err => logOutput("[!] IP lookup error."));
+        }
+
+        function runVulnScan() {
+            const target = document.getElementById('vulnTarget').value;
+            logOutput(`Scanning socket ports on target: ${target}...`);
+            fetch('/run-vuln', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target: target })
+            })
+            .then(res => res.json()).then(data => logOutput("[+] " + data.message))
+            .catch(err => logOutput("[!] Port scan error."));
+        }
+
+        function runHashAnalyzer() {
+            const val = document.getElementById('hashInput').value;
+            logOutput(`Generating cryptographic signatures for token: "${val}"...`);
+            fetch('/run-hash', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hash: val })
+            })
+            .then(res => res.json()).then(data => logOutput("[+] " + data.message))
+            .catch(err => logOutput("[!] Hash computation error."));
+        }
+
+        function runHashDecoder() {
+            const hashVal = document.getElementById('decodeHashInput').value;
+            logOutput(`Initiating hash lookup & database decryption for: "${hashVal}"...`);
+            fetch('/run-decode', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hash: hashVal })
+            })
+            .then(res => res.json()).then(data => logOutput("[+] " + data.message))
+            .catch(err => logOutput("[!] Hash decoder network error."));
+        }
+    </script>
+</body>
+</html>
